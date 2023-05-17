@@ -26,9 +26,9 @@ public class OpenGLCourseApp {
 
     final static float TO_RADIANS = 3.14159265f / 180.0f;
 
-    static int VAO, VBO;
+    static int VAO, VBO, IBO;
     static int shader;
-    static int uniformModel;
+    static int uniformModel, uniformProjection;
 
     static boolean direction = true;
     static float triOffset = 0.0f;
@@ -48,11 +48,15 @@ public class OpenGLCourseApp {
     "                                                                    \n" +
     "layout (location = 0) in vec3 pos;                                  \n" +
     "                                                                    \n" +
+    "out vec4 vCol;                                                      \n" +
+    "                                                                    \n" +
     "uniform mat4 model;                                                 \n" +
+    "uniform mat4 projection;                                            \n" +
     "                                                                    \n" +
     "void main()                                                         \n" +
     "{                                                                   \n" +
-    "    gl_Position = model * vec4(pos, 1.0);                           \n" +
+    "    gl_Position = projection * model * vec4(pos, 1.0);              \n" +
+    "    vCol = vec4(clamp(pos, 0.0f, 1.0f), 1.0f);                      \n" +
     "}                                                                   \n"
     ;
 
@@ -60,23 +64,44 @@ public class OpenGLCourseApp {
     final static String fShader = "                                      \n" +
     "#version 330                                                        \n" +
     "                                                                    \n" +
+    "in vec4 vCol;                                                       \n" +
+    "                                                                    \n" +
     "out vec4 colour;                                                    \n" +
     "                                                                    \n" +
     "void main()                                                         \n" +
     "{                                                                   \n" +
-    "    colour = vec4(1.0, 0.0, 0.0, 1.0);                              \n" +
+//    "    colour = vec4(1.0, 0.0, 0.0, 1.0);                              \n" +
+    "    colour = vCol;                                                  \n" +
     "}                                                                   \n"
     ;
 
     static void CreateTriangle() {
+        /*
+         */
+        int indices[] = {
+                0, 3, 1,
+                1, 3, 2,
+                2, 3, 0,
+                0, 1, 2
+        };
+
+
         float vertices[] = {
                 -1.0f, -1.0f, 0.0f,
+                0.0f, -1.0f, 1.0f,
                 1.0f, -1.0f, 0.0f,
                 0.0f, 1.0f, 0.0f
         };
 
         VAO = glGenVertexArrays();
         glBindVertexArray(VAO);
+
+        /*
+         */
+        IBO = glGenBuffers();
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
+
 
         VBO = glGenBuffers();
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -86,6 +111,7 @@ public class OpenGLCourseApp {
         glEnableVertexAttribArray(0);
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         glBindVertexArray(0);
     }
@@ -156,6 +182,7 @@ public class OpenGLCourseApp {
         }
 
         uniformModel = glGetUniformLocation(shader, "model");
+        uniformProjection = glGetUniformLocation(shader, "projection");
     }
 
     public static void main(String args[]) {
@@ -188,10 +215,15 @@ public class OpenGLCourseApp {
         // This line is essential! Without it, the native code crashes.
         GL.createCapabilities();
 
+        glEnable(GL_DEPTH_TEST);
+
         GL33.glViewport(0, 0, bufferWidth[0], bufferHeight[0]);
 
         CreateTriangle();
         CompileShaders();
+
+        Matrix4f projection = new Matrix4f();
+        projection.setPerspective(45.0f, (float)bufferWidth[0]/(float)bufferHeight[0], 0.1f, 100.0f);
 
         while (!GLFW.glfwWindowShouldClose(mainWindow)) {
             GLFW.glfwPollEvents();
@@ -224,21 +256,32 @@ public class OpenGLCourseApp {
             }
 
             GL33.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            GL33.glClear(GL33.GL_COLOR_BUFFER_BIT);
+            GL33.glClear(GL33.GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glUseProgram(shader);
 
             Matrix4f model = new Matrix4f();
-            //model = model.rotate(curAngle * TO_RADIANS, 0.0f, 0.0f, 1.0f);
-            model = model.translate(triOffset, 0.0f, 0.0f);
-            model = model.scale(curSize, 0.4f, 1.0f);
+            //model = model.rotate(curAngle * TO_RADIANS, 0.0f, 1.0f, 0.0f);
+            model = model.translate(triOffset, 0.35f, -2.1f);
+            model = model.scale(0.4f, 0.4f, 1.0f);
 
             float[] modelArr = new float[16];
             glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+            /*
+             */
+            float[] perspectiveArr = new float[16];
+            glUniformMatrix4fv(uniformProjection, false, projection.get(perspectiveArr));
+
 
             glBindVertexArray(VAO);
 
             glDrawArrays(GL_TRIANGLES, 0, 3);
+            /*
+             */
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+            glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 
             glBindVertexArray(0);
 
