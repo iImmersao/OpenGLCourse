@@ -6,6 +6,8 @@ import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
 
 import java.nio.*;
+import java.util.LinkedList;
+import java.util.List;
 
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
@@ -43,39 +45,16 @@ public class OpenGLCourseApp {
     final static float minSize = 0.1f;
 
     // Vertex Shader
-    final static String vShader = "                                      \n" +
-    "#version 330                                                        \n" +
-    "                                                                    \n" +
-    "layout (location = 0) in vec3 pos;                                  \n" +
-    "                                                                    \n" +
-    "out vec4 vCol;                                                      \n" +
-    "                                                                    \n" +
-    "uniform mat4 model;                                                 \n" +
-    "uniform mat4 projection;                                            \n" +
-    "                                                                    \n" +
-    "void main()                                                         \n" +
-    "{                                                                   \n" +
-    "    gl_Position = projection * model * vec4(pos, 1.0);              \n" +
-    "    vCol = vec4(clamp(pos, 0.0f, 1.0f), 1.0f);                      \n" +
-    "}                                                                   \n"
-    ;
+    final static String vShader = "shader.vert";
 
     // Fragment Shader
-    final static String fShader = "                                      \n" +
-    "#version 330                                                        \n" +
-    "                                                                    \n" +
-    "in vec4 vCol;                                                       \n" +
-    "                                                                    \n" +
-    "out vec4 colour;                                                    \n" +
-    "                                                                    \n" +
-    "void main()                                                         \n" +
-    "{                                                                   \n" +
-//    "    colour = vec4(1.0, 0.0, 0.0, 1.0);                              \n" +
-    "    colour = vCol;                                                  \n" +
-    "}                                                                   \n"
-    ;
+    final static String fShader = "shader.frag";
 
-    static void CreateTriangle() {
+    private List<Mesh> meshList = new LinkedList<>();
+
+    private List<Shader> shaderList = new LinkedList<>();
+
+    void CreateTriangle() {
         /*
          */
         int indices[] = {
@@ -93,99 +72,21 @@ public class OpenGLCourseApp {
                 0.0f, 1.0f, 0.0f
         };
 
-        VAO = glGenVertexArrays();
-        glBindVertexArray(VAO);
+        Mesh obj1 = new Mesh();
+        obj1.createMesh(vertices, indices);
+        meshList.add(obj1);
 
-        /*
-         */
-        IBO = glGenBuffers();
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
-
-
-        VBO = glGenBuffers();
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, vertices, GL_STATIC_DRAW);
-
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-        glEnableVertexAttribArray(0);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        glBindVertexArray(0);
+        Mesh obj2 = new Mesh();
+        obj2.createMesh(vertices, indices);
+        meshList.add(obj2);
     }
 
-    static void AddShader(int theProgram, String shaderCode, int shaderType) {
-        int theShader = glCreateShader(shaderType);
-
-        String[] theCode = new String[1];
-        theCode[0] = shaderCode;
-
-        int[] codeLength = new int[1];
-        codeLength[0] = shaderCode.length();
-
-        System.out.println(shaderCode);
-        //glShaderSource(theShader, theCode);
-        glShaderSource(theShader, shaderCode);
-        glCompileShader(theShader);
-
-        int[] result = { 0 };
-        byte[] eLogRaw = new byte[1024];
-        ByteBuffer eLog = ByteBuffer.wrap(eLogRaw);
-        int[] intBufRaw = new int[1];
-        IntBuffer intBuf = IntBuffer.wrap(intBufRaw);
-
-        glGetShaderiv(theShader, GL_COMPILE_STATUS, result);
-        if (result[0] != 1) {
-            glGetProgramInfoLog(theShader, result, eLog);
-            System.out.println("Error compiling the " + shaderType + " shader: " + eLog + "\n");
-            return;
-        }
-
-        glAttachShader(theProgram, theShader);
+    private void CreateShaders() {
+        Shader shader1 = new Shader();
+        shader1.createFromFiles(vShader, fShader);
+        shaderList.add(shader1);
     }
-
-    static void CompileShaders() {
-        shader = glCreateProgram();
-
-        if (shader < 0) {
-            System.out.println("Error creating shader program!");
-            return;
-        }
-
-        AddShader(shader, vShader, GL_VERTEX_SHADER);
-        AddShader(shader, fShader, GL_FRAGMENT_SHADER);
-
-        //glBindAttribLocation(shader, 0, "vertices");
-
-        int[] result = { 0 };
-        byte[] eLogRaw = new byte[1024];
-        ByteBuffer eLog = ByteBuffer.wrap(eLogRaw);
-        int[] intBufRaw = new int[1];
-        IntBuffer intBuf = IntBuffer.wrap(intBufRaw);
-
-        glLinkProgram(shader);
-        glGetProgramiv(shader, GL_LINK_STATUS, result);
-        if (result[0] != 1) {
-            glGetProgramInfoLog(shader, result, eLog);
-            System.out.println("Error linking program: " + eLog);
-            return;
-        }
-
-        glValidateProgram(shader);
-        glGetProgramiv(shader, GL_VALIDATE_STATUS, result);
-        if (result[0] != 1) {
-            glGetProgramInfoLog(shader, result, eLog);
-            System.out.println("Error validating program: " + eLog);
-            return;
-        }
-
-        uniformModel = glGetUniformLocation(shader, "model");
-        uniformProjection = glGetUniformLocation(shader, "projection");
-    }
-
-    public static void main(String args[]) {
+    public void run() {
 
         if (!GLFW.glfwInit()) {
             System.out.println("GLFW initialisation failed!");
@@ -220,7 +121,7 @@ public class OpenGLCourseApp {
         GL33.glViewport(0, 0, bufferWidth[0], bufferHeight[0]);
 
         CreateTriangle();
-        CompileShaders();
+        CreateShaders();;
 
         Matrix4f projection = new Matrix4f();
         projection.setPerspective(45.0f, (float)bufferWidth[0]/(float)bufferHeight[0], 0.1f, 100.0f);
@@ -258,11 +159,14 @@ public class OpenGLCourseApp {
             GL33.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             GL33.glClear(GL33.GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            glUseProgram(shader);
+            Shader shader = shaderList.get(0);
+            shader.useShader();
+            uniformModel = shader.getUniformModel();
+            uniformProjection = shader.getUniformProjection();
 
             Matrix4f model = new Matrix4f();
             //model = model.rotate(curAngle * TO_RADIANS, 0.0f, 1.0f, 0.0f);
-            model = model.translate(triOffset, 0.35f, -2.1f);
+            model = model.translate(triOffset, 0.0f, -2.5f);
             model = model.scale(0.4f, 0.4f, 1.0f);
 
             float[] modelArr = new float[16];
@@ -272,22 +176,22 @@ public class OpenGLCourseApp {
             float[] perspectiveArr = new float[16];
             glUniformMatrix4fv(uniformProjection, false, projection.get(perspectiveArr));
 
+            meshList.get(0).renderMesh();
 
-            glBindVertexArray(VAO);
-
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-            /*
-             */
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-            glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-
-            glBindVertexArray(0);
+            model = new Matrix4f();
+            model = model.translate(-triOffset, 1.0f, -2.5f);
+            model = model.scale(0.4f, 0.4f, 1.0f);
+            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+            meshList.get(1).renderMesh();
 
             glUseProgram(0);
 
             GLFW.glfwSwapBuffers(mainWindow);
         }
+    }
+
+    public static void main(String[] args) {
+        OpenGLCourseApp app = new OpenGLCourseApp();
+        app.run();
     }
 }
