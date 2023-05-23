@@ -1,10 +1,12 @@
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
 
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.lwjgl.glfw.GLFW.glfwGetTime;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30C.glGenVertexArrays;
@@ -12,6 +14,10 @@ import static org.lwjgl.opengl.GL30C.glGenVertexArrays;
 //import static org.joml.Matrix4f;
 
 public class OpenGLCourseApp {
+
+    private float deltaTime = 0.0f;
+
+    private float lastTime = 0.0f;
 
     // Vertex Shader
     final static String vShader = "shader.vert";
@@ -22,6 +28,8 @@ public class OpenGLCourseApp {
     private List<Mesh> meshList = new LinkedList<>();
 
     private List<Shader> shaderList = new LinkedList<>();
+
+    private Camera camera;
 
     private Window mainWindow;
 
@@ -64,13 +72,25 @@ public class OpenGLCourseApp {
         CreateObjects();
         CreateShaders();;
 
-        int uniformModel, uniformProjection;
+        camera = new Camera(new Vector3f(0.0f, 0.0f, 0.0f),
+                new Vector3f(0.0f, 1.0f, 0.0f),
+                90.0f, 0.0f, 5.0f, 1.0f);
+
+        int uniformModel, uniformProjection, uniformView;
 
         Matrix4f projection = new Matrix4f();
-        projection.setPerspective(45.0f, (float)mainWindow.getBufferWidth()/(float)mainWindow.getBufferHeight(), 0.1f, 100.0f);
+        projection.setPerspective(45.0f, (float)mainWindow.getBufferWidth()/(float)mainWindow.getBufferHeight(),
+                0.1f, 100.0f);
 
         while (!mainWindow.getShouldClose()) {
+            float now = (float) glfwGetTime();
+            deltaTime = now - lastTime;
+            lastTime = now;
+
             GLFW.glfwPollEvents();
+
+            camera.keyControl(mainWindow.getKeys(), deltaTime);
+            camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
 
             GL33.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             GL33.glClear(GL33.GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -79,6 +99,7 @@ public class OpenGLCourseApp {
             shader.useShader();
             uniformModel = shader.getUniformModel();
             uniformProjection = shader.getUniformProjection();
+            uniformView = shader.getUniformView();
 
             Matrix4f model = new Matrix4f();
             model = model.translate(0.0f, 0.0f, -2.5f);
@@ -88,6 +109,8 @@ public class OpenGLCourseApp {
             glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
             float[] perspectiveArr = new float[16];
             glUniformMatrix4fv(uniformProjection, false, projection.get(perspectiveArr));
+            float[] viewArr = new float[16];
+            glUniformMatrix4fv(uniformView, false, camera.calculateViewMatrix().get(viewArr));
 
             meshList.get(0).renderMesh();
 

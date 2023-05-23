@@ -13,14 +13,12 @@ public class Window {
     private long mainWindow;
     private int[] bufferWidth = new int[1];
     private int[] bufferHeight = new int[1];
-
-    private boolean keys[] = new boolean[1024];
-
-    private double lastX;
-    private double lastY;
     private double xChange;
     private double yChange;
-    private boolean mouseFirstMoved = true;
+    private boolean[] keys = new boolean[1024];
+    private boolean mouseFirstMoved;
+    private double lastX;
+    private double lastY;
 
     private GLFWKeyCallbackI handleKeys;
     private GLFWCursorPosCallbackI handleMouse;
@@ -28,6 +26,13 @@ public class Window {
     public Window(int windowWidth, int windowHeight) {
         this.width = windowWidth;
         this.height = windowHeight;
+        xChange = 0.0f;
+        yChange = 0.0f;
+        mouseFirstMoved = true;
+
+        for (int i = 0; i < 1024; i++) {
+            keys[i] = false;
+        }
     }
 
     public int initialise() {
@@ -125,4 +130,36 @@ public class Window {
 
     public void swapBuffers() { glfwSwapBuffers(mainWindow); }
 
+    public void handleKeys(long window, int key, int code, int action, int mode) {
+
+        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+            glfwSetWindowShouldClose(window, true);
+        }
+
+        if (key >= 0 && key < 1024) {
+            if (action == GLFW_PRESS) {
+                keys[key] = true;
+            } else if (action == GLFW_RELEASE) {
+                keys[key] = false;
+            }
+        }
+    }
+
+    public void handleMouse(long window, double xPos, double yPos) {
+        if (mouseFirstMoved) {
+            lastX = xPos;
+            lastY = yPos;
+            mouseFirstMoved = false;
+        }
+
+        xChange = xPos - lastX;
+        yChange = lastY - yPos;
+
+        lastX = xPos;
+        lastY = yPos;
+    }
+
+    public boolean[] getKeys() {
+        return keys;
+    }
 }

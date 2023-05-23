@@ -10,6 +10,8 @@ public class Shader {
     private int uniformModel;
     private int uniformProjection;
 
+    private int uniformView;
+
     public void createFromString(String vertexCode, String fragmentCode) {
         compileShader(vertexCode, fragmentCode);
     }
@@ -103,6 +105,7 @@ public class Shader {
 
         uniformModel = glGetUniformLocation(shaderID, "model");
         uniformProjection = glGetUniformLocation(shaderID, "projection");
+        uniformView = glGetUniformLocation(shaderID, "view");
     }
 
     public void useShader() {
@@ -117,6 +120,7 @@ public class Shader {
 
         uniformModel = 0;
         uniformProjection = 0;
+        uniformView = 0;
     }
 
     public int getShaderID() {
@@ -130,4 +134,6 @@ public class Shader {
     public int getUniformProjection() {
         return uniformProjection;
     }
+
+    public int getUniformView() { return uniformView; }
 }
