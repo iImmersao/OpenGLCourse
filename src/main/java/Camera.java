@@ -76,7 +76,7 @@ public class Camera {
 
     public Matrix4f calculateViewMatrix() {
         Matrix4f view = new Matrix4f();
-        return view.lookAt(position, position.add(front), up);
+        return view.lookAt(position, position.add(front, new Vector3f()), up);
     }
 
     private void update() {
@@ -85,8 +85,8 @@ public class Camera {
         front.z = (float) (Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)));
         front = front.normalize();
 
-        right = front.cross(worldUp).normalize();
+        right = front.cross(worldUp, new Vector3f()).normalize();
 
-        up = right.cross(front).normalize();
+        up = right.cross(front, new Vector3f()).normalize();
     }
 }
