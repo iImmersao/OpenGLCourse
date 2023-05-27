@@ -1,6 +1,5 @@
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL20.glGetUniformLocation;
@@ -44,12 +43,6 @@ public class Shader {
     static void AddShader(int theProgram, String shaderCode, int shaderType) {
         int theShader = glCreateShader(shaderType);
 
-        String[] theCode = new String[1];
-        theCode[0] = shaderCode;
-
-        int[] codeLength = new int[1];
-        codeLength[0] = shaderCode.length();
-
         System.out.println(shaderCode);
         glShaderSource(theShader, shaderCode);
         glCompileShader(theShader);
@@ -57,8 +50,6 @@ public class Shader {
         int[] result = { 0 };
         byte[] eLogRaw = new byte[1024];
         ByteBuffer eLog = ByteBuffer.wrap(eLogRaw);
-        int[] intBufRaw = new int[1];
-        IntBuffer intBuf = IntBuffer.wrap(intBufRaw);
 
         glGetShaderiv(theShader, GL_COMPILE_STATUS, result);
         if (result[0] != 1) {
@@ -84,8 +75,6 @@ public class Shader {
         int[] result = { 0 };
         byte[] eLogRaw = new byte[1024];
         ByteBuffer eLog = ByteBuffer.wrap(eLogRaw);
-        int[] intBufRaw = new int[1];
-        IntBuffer intBuf = IntBuffer.wrap(intBufRaw);
 
         glLinkProgram(shaderID);
         glGetProgramiv(shaderID, GL_LINK_STATUS, result);
@@ -121,10 +110,6 @@ public class Shader {
         uniformModel = 0;
         uniformProjection = 0;
         uniformView = 0;
-    }
-
-    public int getShaderID() {
-        return shaderID;
     }
 
     public int getUniformModel() {

@@ -9,9 +9,6 @@ import java.util.List;
 import static org.lwjgl.glfw.GLFW.glfwGetTime;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30C.glGenVertexArrays;
-
-//import static org.joml.Matrix4f;
 
 public class OpenGLCourseApp {
 
@@ -25,30 +22,30 @@ public class OpenGLCourseApp {
     // Fragment Shader
     final static String fShader = "shader.frag";
 
-    private List<Mesh> meshList = new LinkedList<>();
+    private final List<Mesh> meshList = new LinkedList<>();
 
-    private List<Shader> shaderList = new LinkedList<>();
+    private final List<Shader> shaderList = new LinkedList<>();
 
     private Camera camera;
 
     private Window mainWindow;
 
+    private Texture brickTexture;
+    private Texture dirtTexture;
+
     void CreateObjects() {
-        /*
-         */
-        int indices[] = {
+        int[] indices = {
                 0, 3, 1,
                 1, 3, 2,
                 2, 3, 0,
                 0, 1, 2
         };
 
-
-        float vertices[] = {
-                -1.0f, -1.0f, 0.0f,
-                0.0f, -1.0f, 1.0f,
-                1.0f, -1.0f, 0.0f,
-                0.0f, 1.0f, 0.0f
+        float[] vertices = {
+                -1.0f, -1.0f, 0.0f,     0.0f, 0.0f,
+                0.0f, -1.0f, 1.0f,      0.5f, 0.0f,
+                1.0f, -1.0f, 0.0f,      1.0f, 0.0f,
+                0.0f, 1.0f, 0.0f,       0.5f, 1.0f
         };
 
         Mesh obj1 = new Mesh();
@@ -70,11 +67,16 @@ public class OpenGLCourseApp {
         mainWindow.initialise();
 
         CreateObjects();
-        CreateShaders();;
+        CreateShaders();
 
         camera = new Camera(new Vector3f(0.0f, 0.0f, 0.0f),
                 new Vector3f(0.0f, 1.0f, 0.0f),
                 90.0f, 0.0f, 5.0f, 1.0f);
+
+        brickTexture = new Texture("Textures/brick.png");
+        brickTexture.loadTexture();
+        dirtTexture = new Texture("Textures/dirt.png");
+        dirtTexture.loadTexture();
 
         int uniformModel, uniformProjection, uniformView;
 
@@ -112,12 +114,14 @@ public class OpenGLCourseApp {
             float[] viewArr = new float[16];
             glUniformMatrix4fv(uniformView, false, camera.calculateViewMatrix().get(viewArr));
 
+            brickTexture.useTexture();
             meshList.get(0).renderMesh();
 
             model = new Matrix4f();
             model = model.translate(0.0f, 1.0f, -2.5f);
             model = model.scale(0.4f, 0.4f, 1.0f);
             glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+            dirtTexture.useTexture();
             meshList.get(1).renderMesh();
 
             glUseProgram(0);

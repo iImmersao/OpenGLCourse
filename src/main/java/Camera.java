@@ -8,7 +8,7 @@ public class Camera {
 
     private Vector3f up;
 
-    private Vector3f worldUp;
+    private final Vector3f worldUp;
 
     private Vector3f front;
 
@@ -18,9 +18,9 @@ public class Camera {
 
     private float pitch;
 
-    private float moveSpeed;
+    private final float moveSpeed;
 
-    private float turnSpeed;
+    private final float turnSpeed;
 
     public Camera(Vector3f startPosition, Vector3f startUp, float startYaw, float startPitch,
                   float startMoveSpeed, float startTurnSpeed) {

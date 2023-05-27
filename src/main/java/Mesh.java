@@ -30,8 +30,10 @@ public class Mesh {
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferData(GL_ARRAY_BUFFER, vertices, GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, 5 * 4, 0);
         glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, false, 5 * 4, 3 * 4);
+        glEnableVertexAttribArray(1);
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -65,37 +67,4 @@ public class Mesh {
 
         indexCount = 0;
     }
-
-    public int getVAO() {
-        return VAO;
-    }
-
-    public void setVAO(int VAO) {
-        this.VAO = VAO;
-    }
-
-    public int getVBO() {
-        return VBO;
-    }
-
-    public void setVBO(int VBO) {
-        this.VBO = VBO;
-    }
-
-    public int getIBO() {
-        return IBO;
-    }
-
-    public void setIBO(int IBO) {
-        this.IBO = IBO;
-    }
-
-    public int getIndexCount() {
-        return indexCount;
-    }
-
-    public void setIndexCount(int indexCount) {
-        this.indexCount = indexCount;
-    }
-
 }

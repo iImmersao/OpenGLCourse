@@ -8,14 +8,14 @@ import static org.lwjgl.opengl.GL11.glEnable;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class Window {
-    private int width = 800;
-    private int height = 600;
+    private final int width;
+    private final int height;
     private long mainWindow;
-    private int[] bufferWidth = new int[1];
-    private int[] bufferHeight = new int[1];
+    private final int[] bufferWidth = new int[1];
+    private final int[] bufferHeight = new int[1];
     private double xChange;
     private double yChange;
-    private boolean[] keys = new boolean[1024];
+    private final boolean[] keys = new boolean[1024];
     private boolean mouseFirstMoved;
     private double lastX;
     private double lastY;
