@@ -14,6 +14,9 @@ public class Shader {
     private int uniformAmbientIntensity;
     private int uniformAmbientColour;
 
+    private int uniformDiffuseIntensity;
+    private int uniformDirection;
+
     public void createFromString(String vertexCode, String fragmentCode) {
         compileShader(vertexCode, fragmentCode);
     }
@@ -100,6 +103,8 @@ public class Shader {
         uniformView = glGetUniformLocation(shaderID, "view");
         uniformAmbientColour = glGetUniformLocation(shaderID, "directionalLight.colour");
         uniformAmbientIntensity = glGetUniformLocation(shaderID, "directionalLight.ambientIntensity");
+        uniformDirection = glGetUniformLocation(shaderID, "directionalLight.direction");
+        uniformDiffuseIntensity = glGetUniformLocation(shaderID, "directionalLight.diffuseIntensity");
     }
 
     public void useShader() {
@@ -133,5 +138,13 @@ public class Shader {
 
     public int getUniformAmbientColour() {
         return uniformAmbientColour;
+    }
+
+    public int getUniformDiffuseIntensity() {
+        return uniformDiffuseIntensity;
+    }
+
+    public int getUniformDirection() {
+        return uniformDirection;
     }
 }

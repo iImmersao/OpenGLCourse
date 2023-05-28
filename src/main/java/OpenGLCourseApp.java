@@ -35,6 +35,31 @@ public class OpenGLCourseApp {
 
     private Light mainLight;
 
+    public void calcAverageNormals(int[] indices, float[] vertices, int vLength, int normalOffset) {
+        for (int i = 0; i < indices.length; i += 3) {
+            int in0 = indices[i] * vLength;
+            int in1 = indices[i + 1] * vLength;
+            int in2 = indices[i + 2] * vLength;
+            Vector3f v1 = new Vector3f(vertices[in1] - vertices[in0], vertices[in1 + 1] - vertices[in0 + 1], vertices[in1 + 2] - vertices[in0 + 2]);
+            Vector3f v2 = new Vector3f(vertices[in2] - vertices[in0], vertices[in2 + 1] - vertices[in0 + 1], vertices[in2 + 2] - vertices[in0 + 2]);
+            Vector3f normal = new Vector3f();
+            v1.cross(v2, normal);
+            normal.normalize();
+
+            in0 += normalOffset; in1 += normalOffset; in2 += normalOffset;
+            vertices[in0] += normal.x; vertices[in0 + 1] += normal.y; vertices[in0 + 2] += normal.z;
+            vertices[in1] += normal.x; vertices[in1 + 1] += normal.y; vertices[in1 + 2] += normal.z;
+            vertices[in2] += normal.x; vertices[in2 + 1] += normal.y; vertices[in2 + 2] += normal.z;
+        }
+
+        for (int i = 0; i < vertices.length / vLength; i++) {
+            int nOffset = i * vLength + normalOffset;
+            Vector3f vec = new Vector3f(vertices[nOffset], vertices[nOffset + 1], vertices[nOffset + 2]);
+            vec.normalize();
+            vertices[nOffset] = vec.x; vertices[nOffset + 1] = vec.y; vertices[nOffset + 2] = vec.z;
+        }
+    }
+
     void CreateObjects() {
         int[] indices = {
                 0, 3, 1,
@@ -44,11 +69,13 @@ public class OpenGLCourseApp {
         };
 
         float[] vertices = {
-                -1.0f, -1.0f, 0.0f,     0.0f, 0.0f,
-                0.0f, -1.0f, 1.0f,      0.5f, 0.0f,
-                1.0f, -1.0f, 0.0f,      1.0f, 0.0f,
-                0.0f, 1.0f, 0.0f,       0.5f, 1.0f
+                -1.0f, -1.0f, 0.0f,     0.0f, 0.0f,     0.0f, 0.0f, 0.0f,
+                0.0f, -1.0f, 1.0f,      0.5f, 0.0f,     0.0f, 0.0f, 0.0f,
+                1.0f, -1.0f, 0.0f,      1.0f, 0.0f,     0.0f, 0.0f, 0.0f,
+                0.0f, 1.0f, 0.0f,       0.5f, 1.0f,     0.0f, 0.0f, 0.0f
         };
+
+        calcAverageNormals(indices, vertices, 8, 5);
 
         Mesh obj1 = new Mesh();
         obj1.createMesh(vertices, indices);
@@ -73,19 +100,21 @@ public class OpenGLCourseApp {
 
         camera = new Camera(new Vector3f(0.0f, 0.0f, 0.0f),
                 new Vector3f(0.0f, 1.0f, 0.0f),
-                90.0f, 0.0f, 5.0f, 1.0f);
+                -90.0f, 0.0f, 5.0f, 0.5f);
 
         brickTexture = new Texture("Textures/brick.png");
         brickTexture.loadTexture();
         dirtTexture = new Texture("Textures/dirt.png");
         dirtTexture.loadTexture();
 
-        mainLight = new Light(1.0f, 1.0f, 1.0f, 0.2f);
+        mainLight = new Light(1.0f, 1.0f, 1.0f, 0.2f,
+                2.0f, -1.0f, -2.0f, 1.0f);
 
-        int uniformModel, uniformProjection, uniformView, uniformAmbientIntensity, uniformAmbientColour;
+        int uniformModel, uniformProjection, uniformView,
+                uniformAmbientIntensity, uniformAmbientColour, uniformDirection, uniformDiffuseIntensity;
 
         Matrix4f projection = new Matrix4f();
-        projection.setPerspective(45.0f, (float)mainWindow.getBufferWidth()/(float)mainWindow.getBufferHeight(),
+        projection.setPerspective((float) Math.toRadians(45.0f), (float)mainWindow.getBufferWidth()/(float)mainWindow.getBufferHeight(),
                 0.1f, 100.0f);
 
         while (!mainWindow.getShouldClose()) {
@@ -108,8 +137,10 @@ public class OpenGLCourseApp {
             uniformView = shader.getUniformView();
             uniformAmbientColour = shader.getUniformAmbientColour();
             uniformAmbientIntensity = shader.getUniformAmbientIntensity();
+            uniformDirection = shader.getUniformDirection();
+            uniformDiffuseIntensity = shader.getUniformDiffuseIntensity();
 
-            mainLight.useLight(uniformAmbientIntensity, uniformAmbientColour);
+            mainLight.useLight(uniformAmbientIntensity, uniformAmbientColour, uniformDiffuseIntensity, uniformDirection);
 
             Matrix4f model = new Matrix4f();
             model = model.translate(0.0f, 0.0f, -2.5f);
