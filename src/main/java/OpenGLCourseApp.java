@@ -33,6 +33,8 @@ public class OpenGLCourseApp {
     private Texture brickTexture;
     private Texture dirtTexture;
 
+    private Light mainLight;
+
     void CreateObjects() {
         int[] indices = {
                 0, 3, 1,
@@ -78,7 +80,9 @@ public class OpenGLCourseApp {
         dirtTexture = new Texture("Textures/dirt.png");
         dirtTexture.loadTexture();
 
-        int uniformModel, uniformProjection, uniformView;
+        mainLight = new Light(1.0f, 1.0f, 1.0f, 0.2f);
+
+        int uniformModel, uniformProjection, uniformView, uniformAmbientIntensity, uniformAmbientColour;
 
         Matrix4f projection = new Matrix4f();
         projection.setPerspective(45.0f, (float)mainWindow.getBufferWidth()/(float)mainWindow.getBufferHeight(),
@@ -102,6 +106,10 @@ public class OpenGLCourseApp {
             uniformModel = shader.getUniformModel();
             uniformProjection = shader.getUniformProjection();
             uniformView = shader.getUniformView();
+            uniformAmbientColour = shader.getUniformAmbientColour();
+            uniformAmbientIntensity = shader.getUniformAmbientIntensity();
+
+            mainLight.useLight(uniformAmbientIntensity, uniformAmbientColour);
 
             Matrix4f model = new Matrix4f();
             model = model.translate(0.0f, 0.0f, -2.5f);

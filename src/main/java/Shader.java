@@ -11,6 +11,9 @@ public class Shader {
 
     private int uniformView;
 
+    private int uniformAmbientIntensity;
+    private int uniformAmbientColour;
+
     public void createFromString(String vertexCode, String fragmentCode) {
         compileShader(vertexCode, fragmentCode);
     }
@@ -95,6 +98,8 @@ public class Shader {
         uniformModel = glGetUniformLocation(shaderID, "model");
         uniformProjection = glGetUniformLocation(shaderID, "projection");
         uniformView = glGetUniformLocation(shaderID, "view");
+        uniformAmbientColour = glGetUniformLocation(shaderID, "directionalLight.colour");
+        uniformAmbientIntensity = glGetUniformLocation(shaderID, "directionalLight.ambientIntensity");
     }
 
     public void useShader() {
@@ -121,4 +126,12 @@ public class Shader {
     }
 
     public int getUniformView() { return uniformView; }
+
+    public int getUniformAmbientIntensity() {
+        return uniformAmbientIntensity;
+    }
+
+    public int getUniformAmbientColour() {
+        return uniformAmbientColour;
+    }
 }
