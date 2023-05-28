@@ -17,6 +17,10 @@ public class Shader {
     private int uniformDiffuseIntensity;
     private int uniformDirection;
 
+    private int uniformEyePosition;
+    private int uniformSpecularIntensity;
+    private int uniformShininess;
+
     public void createFromString(String vertexCode, String fragmentCode) {
         compileShader(vertexCode, fragmentCode);
     }
@@ -105,7 +109,9 @@ public class Shader {
         uniformAmbientIntensity = glGetUniformLocation(shaderID, "directionalLight.ambientIntensity");
         uniformDirection = glGetUniformLocation(shaderID, "directionalLight.direction");
         uniformDiffuseIntensity = glGetUniformLocation(shaderID, "directionalLight.diffuseIntensity");
-    }
+        uniformSpecularIntensity = glGetUniformLocation(shaderID, "material.specularIntensity");
+        uniformShininess = glGetUniformLocation(shaderID, "material.shininess");
+        uniformEyePosition = glGetUniformLocation(shaderID, "eyePosition");    }
 
     public void useShader() {
         glUseProgram(shaderID);
@@ -146,5 +152,17 @@ public class Shader {
 
     public int getUniformDirection() {
         return uniformDirection;
+    }
+
+    public int getUniformEyePosition() {
+        return uniformEyePosition;
+    }
+
+    public int getUniformSpecularIntensity() {
+        return uniformSpecularIntensity;
+    }
+
+    public int getUniformShininess() {
+        return uniformShininess;
     }
 }

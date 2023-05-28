@@ -79,6 +79,10 @@ public class Camera {
         return view.lookAt(position, position.add(front, new Vector3f()), up);
     }
 
+    public Vector3f getPosition() {
+        return position;
+    }
+
     private void update() {
         front.x = (float) (Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)));
         front.y = (float) Math.sin(Math.toRadians(pitch));
