@@ -32,11 +32,13 @@ public class OpenGLCourseApp {
 
     private Texture brickTexture;
     private Texture dirtTexture;
+    private Texture plainTexture;
 
     private Material shinyMaterial;
     private Material dullMaterial;
 
-    private Light mainLight;
+    private DirectionalLight mainLight;
+    private PointLight[] pointLights = new PointLight[CommonValues.MAX_POINT_LIGHTS];
 
     public void calcAverageNormals(int[] indices, float[] vertices, int vLength, int normalOffset) {
         for (int i = 0; i < indices.length; i += 3) {
@@ -78,6 +80,18 @@ public class OpenGLCourseApp {
                 0.0f, 1.0f, 0.0f,       0.5f, 1.0f,     0.0f, 0.0f, 0.0f
         };
 
+        int[] floorIndices = {
+                0, 2, 1,
+                1, 2, 3
+        };
+
+        float[] floorVertices = {
+                -10.0f, 0.0f, -10.f,   0.0f, 0.0f,        0.0f, -1.0f, 0.0f,
+                10.0f, 0.0f, -10.f,    10.0f, 0.0f,       0.0f, -1.0f, 0.0f,
+                -10.0f, 0.0f, 10.0f,   0.0f, 10.0f,       0.0f, -1.0f, 0.0f,
+                10.0f, 0.0f, 10.0f,    10.0f, 10.0f,      0.0f, -1.0f, 0.0f
+        };
+
         calcAverageNormals(indices, vertices, 8, 5);
 
         Mesh obj1 = new Mesh();
@@ -87,6 +101,10 @@ public class OpenGLCourseApp {
         Mesh obj2 = new Mesh();
         obj2.createMesh(vertices, indices);
         meshList.add(obj2);
+
+        Mesh obj3 = new Mesh();
+        obj3.createMesh(floorVertices, floorIndices);
+        meshList.add(obj3);
     }
 
     private void CreateShaders() {
@@ -109,15 +127,29 @@ public class OpenGLCourseApp {
         brickTexture.loadTexture();
         dirtTexture = new Texture("Textures/dirt.png");
         dirtTexture.loadTexture();
+        plainTexture = new Texture("Textures/plain.png");
+        plainTexture.loadTexture();
 
-        shinyMaterial = new Material(1.0f, 32);
+        shinyMaterial = new Material(4.0f, 256);
         dullMaterial = new Material(0.3f, 4);
 
-        mainLight = new Light(1.0f, 1.0f, 1.0f, 0.1f,
-                2.0f, -1.0f, -2.0f, 0.1f);
+        mainLight = new DirectionalLight(1.0f, 1.0f, 1.0f,
+                0.1f, 2.0f,
+                0.0f, 0.0f, -1.0f);
+
+        int pointLightCount = 0;
+        pointLights[0] = new PointLight(0.0f, 0.0f, 1.0f,
+                0.0f, 1.0f,
+                0.0f, 0.0f, 0.0f,
+                0.3f, 0.2f, 0.1f);
+        pointLightCount++;
+        pointLights[1] = new PointLight(0.0f, 1.0f, 0.0f,
+                0.0f, 1.0f,
+                -4.0f, 2.0f, 0.0f,
+                0.3f, 0.1f, 0.1f);
+        pointLightCount++;
 
         int uniformModel, uniformProjection, uniformView, uniformEyePosition,
-                uniformAmbientIntensity, uniformAmbientColour, uniformDirection, uniformDiffuseIntensity,
                 uniformSpecaularIntensity, uniformShininess;
 
         Matrix4f projection = new Matrix4f();
@@ -142,15 +174,12 @@ public class OpenGLCourseApp {
             uniformModel = shader.getUniformModel();
             uniformProjection = shader.getUniformProjection();
             uniformView = shader.getUniformView();
-            uniformAmbientColour = shader.getUniformAmbientColour();
-            uniformAmbientIntensity = shader.getUniformAmbientIntensity();
-            uniformDirection = shader.getUniformDirection();
-            uniformDiffuseIntensity = shader.getUniformDiffuseIntensity();
             uniformEyePosition = shader.getUniformEyePosition();
             uniformSpecaularIntensity = shader.getUniformSpecularIntensity();
             uniformShininess = shader.getUniformShininess();
 
-            mainLight.useLight(uniformAmbientIntensity, uniformAmbientColour, uniformDiffuseIntensity, uniformDirection);
+            shader.setDirectionalLight(mainLight);
+            shader.setPointLights(pointLights, pointLightCount);
 
             float[] perspectiveArr = new float[16];
             glUniformMatrix4fv(uniformProjection, false, projection.get(perspectiveArr));
@@ -176,6 +205,14 @@ public class OpenGLCourseApp {
             dirtTexture.useTexture();
             dullMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
             meshList.get(1).renderMesh();
+
+            model = new Matrix4f();
+            model = model.translate(0.0f, -2.0f, 0.0f);
+            //model = model.scale(0.4f, 0.4f, 1.0f);
+            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+            plainTexture.useTexture();
+            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
+            meshList.get(2).renderMesh();
 
             glUseProgram(0);
 

@@ -5,6 +5,79 @@ import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL20.glGetUniformLocation;
 
 public class Shader {
+    private class UniformDirectionalLight {
+        private int uniformColour;
+        private int uniformAmbientIntensity;
+        private int uniformDiffuseIntensity;
+        private int uniformDirection;
+
+    }
+
+    private class UniformPointLight {
+        private int uniformColour;
+        private int uniformAmbientIntensity;
+        private int uniformDiffuseIntensity;
+        private int uniformPosition;
+        private int uniformConstant;
+        private int uniformLinear;
+        private int uniformExponent;
+
+        public int getUniformColour() {
+            return uniformColour;
+        }
+
+        public void setUniformColour(int uniformColour) {
+            this.uniformColour = uniformColour;
+        }
+
+        public int getUniformAmbientIntensity() {
+            return uniformAmbientIntensity;
+        }
+
+        public void setUniformAmbientIntensity(int uniformAmbientIntensity) {
+            this.uniformAmbientIntensity = uniformAmbientIntensity;
+        }
+
+        public int getUniformDiffuseIntensity() {
+            return uniformDiffuseIntensity;
+        }
+
+        public void setUniformDiffuseIntensity(int uniformDiffuseIntensity) {
+            this.uniformDiffuseIntensity = uniformDiffuseIntensity;
+        }
+
+        public int getUniformPosition() {
+            return uniformPosition;
+        }
+
+        public void setUniformPosition(int uniformPosition) {
+            this.uniformPosition = uniformPosition;
+        }
+
+        public int getUniformConstant() {
+            return uniformConstant;
+        }
+
+        public void setUniformConstant(int uniformConstant) {
+            this.uniformConstant = uniformConstant;
+        }
+
+        public int getUniformLinear() {
+            return uniformLinear;
+        }
+
+        public void setUniformLinear(int uniformLinear) {
+            this.uniformLinear = uniformLinear;
+        }
+
+        public int getUniformExponent() {
+            return uniformExponent;
+        }
+
+        public void setUniformExponent(int uniformExponent) {
+            this.uniformExponent = uniformExponent;
+        }
+    }
     private int shaderID;
     private int uniformModel;
     private int uniformProjection;
@@ -20,6 +93,18 @@ public class Shader {
     private int uniformEyePosition;
     private int uniformSpecularIntensity;
     private int uniformShininess;
+
+    private UniformDirectionalLight uniformDirectionalLight = new UniformDirectionalLight();
+
+    private int uniformPointLightCount;
+
+    private UniformPointLight[] uniformPointLight = new UniformPointLight[CommonValues.MAX_POINT_LIGHTS];
+
+    public Shader() {
+        for (int i = 0; i < CommonValues.MAX_POINT_LIGHTS; i++) {
+            uniformPointLight[i] = new UniformPointLight();
+        }
+    }
 
     public void createFromString(String vertexCode, String fragmentCode) {
         compileShader(vertexCode, fragmentCode);
@@ -105,13 +190,41 @@ public class Shader {
         uniformModel = glGetUniformLocation(shaderID, "model");
         uniformProjection = glGetUniformLocation(shaderID, "projection");
         uniformView = glGetUniformLocation(shaderID, "view");
-        uniformAmbientColour = glGetUniformLocation(shaderID, "directionalLight.colour");
-        uniformAmbientIntensity = glGetUniformLocation(shaderID, "directionalLight.ambientIntensity");
-        uniformDirection = glGetUniformLocation(shaderID, "directionalLight.direction");
-        uniformDiffuseIntensity = glGetUniformLocation(shaderID, "directionalLight.diffuseIntensity");
+        uniformDirectionalLight.uniformColour = glGetUniformLocation(shaderID, "directionalLight.base.colour");
+        uniformDirectionalLight.uniformAmbientIntensity = glGetUniformLocation(shaderID, "directionalLight.base.ambientIntensity");
+        uniformDirectionalLight.uniformDirection = glGetUniformLocation(shaderID, "directionalLight.direction");
+        uniformDirectionalLight.uniformDiffuseIntensity = glGetUniformLocation(shaderID, "directionalLight.base.diffuseIntensity");
         uniformSpecularIntensity = glGetUniformLocation(shaderID, "material.specularIntensity");
         uniformShininess = glGetUniformLocation(shaderID, "material.shininess");
-        uniformEyePosition = glGetUniformLocation(shaderID, "eyePosition");    }
+        uniformEyePosition = glGetUniformLocation(shaderID, "eyePosition");
+
+        uniformPointLightCount = glGetUniformLocation(shaderID, "pointLightCount");
+
+        for (int i = 0; i < CommonValues.MAX_POINT_LIGHTS; i++) {
+            String locBuff;
+
+            locBuff = "pointLights[" + i + "].base.colour";
+            uniformPointLight[i].uniformColour = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "pointLights[" + i + "].base.ambientIntensity";
+            uniformPointLight[i].uniformAmbientIntensity = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "pointLights[" + i + "].base.diffuseIntensity";
+            uniformPointLight[i].uniformDiffuseIntensity = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "pointLights[" + i + "].position";
+            uniformPointLight[i].uniformPosition = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "pointLights[" + i + "].constant";
+            uniformPointLight[i].uniformConstant = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "pointLights[" + i + "].linear";
+            uniformPointLight[i].uniformLinear = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "pointLights[" + i + "].exponent";
+            uniformPointLight[i].uniformExponent = glGetUniformLocation(shaderID, locBuff);
+        }
+    }
 
     public void useShader() {
         glUseProgram(shaderID);
@@ -126,6 +239,25 @@ public class Shader {
         uniformModel = 0;
         uniformProjection = 0;
         uniformView = 0;
+    }
+
+    void setDirectionalLight(DirectionalLight dLight) {
+        dLight.useLight(uniformDirectionalLight.uniformAmbientIntensity, uniformDirectionalLight.uniformColour,
+                uniformDirectionalLight.uniformDiffuseIntensity, uniformDirectionalLight.uniformDirection);
+    }
+
+    void setPointLights(PointLight pLight[], int lightCount) {
+        if (lightCount > CommonValues.MAX_POINT_LIGHTS) {
+            lightCount = CommonValues.MAX_POINT_LIGHTS;
+        }
+
+        glUniform1i(uniformPointLightCount, lightCount);
+
+        for (int i = 0; i < lightCount; i++) {
+            pLight[i].useLight(uniformPointLight[i].uniformAmbientIntensity, uniformPointLight[i].uniformColour,
+                    uniformPointLight[i].uniformDiffuseIntensity, uniformPointLight[i].uniformPosition,
+                    uniformPointLight[i].uniformConstant, uniformPointLight[i].uniformLinear, uniformPointLight[i].uniformExponent);
+        }
     }
 
     public int getUniformModel() {
