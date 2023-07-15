@@ -39,6 +39,7 @@ public class OpenGLCourseApp {
 
     private DirectionalLight mainLight;
     private PointLight[] pointLights = new PointLight[CommonValues.MAX_POINT_LIGHTS];
+    private SpotLight[] spotLights = new SpotLight[CommonValues.MAX_SPOT_LIGHTS];
 
     public void calcAverageNormals(int[] indices, float[] vertices, int vLength, int normalOffset) {
         for (int i = 0; i < indices.length; i += 3) {
@@ -142,12 +143,28 @@ public class OpenGLCourseApp {
                 0.0f, 1.0f,
                 0.0f, 0.0f, 0.0f,
                 0.3f, 0.2f, 0.1f);
-        pointLightCount++;
+        //pointLightCount++;
         pointLights[1] = new PointLight(0.0f, 1.0f, 0.0f,
                 0.0f, 1.0f,
                 -4.0f, 2.0f, 0.0f,
                 0.3f, 0.1f, 0.1f);
-        pointLightCount++;
+        //pointLightCount++;
+
+        int spotLightCount = 0;
+        spotLights[0] = new SpotLight(1.0f, 1.0f, 1.0f,
+                0.0f, 2.0f,
+                0.0f, 0.0f, 0.0f,
+                0.0f, -1.0f, 0.0f,
+                1.0f, 0.0f, 0.0f,
+                20.0f);
+        spotLightCount++;
+        spotLights[1] = new SpotLight(1.0f, 1.0f, 1.0f,
+                0.0f, 1.0f,
+                0.0f, 1.5f, 0.0f,
+                -2.0f, -1.0f, 0.0f,
+                1.0f, 0.0f, 0.0f,
+                20.0f);
+        spotLightCount++;
 
         int uniformModel, uniformProjection, uniformView, uniformEyePosition,
                 uniformSpecaularIntensity, uniformShininess;
@@ -178,8 +195,13 @@ public class OpenGLCourseApp {
             uniformSpecaularIntensity = shader.getUniformSpecularIntensity();
             uniformShininess = shader.getUniformShininess();
 
+            Vector3f lowerLight = new Vector3f(camera.getPosition());
+            lowerLight.y -= 0.3f;
+            spotLights[0].setFlash(lowerLight, camera.getDirection());
+
             shader.setDirectionalLight(mainLight);
             shader.setPointLights(pointLights, pointLightCount);
+            shader.setSpotLights(spotLights, spotLightCount);
 
             float[] perspectiveArr = new float[16];
             glUniformMatrix4fv(uniformProjection, false, projection.get(perspectiveArr));
@@ -210,7 +232,7 @@ public class OpenGLCourseApp {
             model = model.translate(0.0f, -2.0f, 0.0f);
             //model = model.scale(0.4f, 0.4f, 1.0f);
             glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
-            plainTexture.useTexture();
+            dirtTexture.useTexture();
             shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
             meshList.get(2).renderMesh();
 

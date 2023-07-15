@@ -35,4 +35,24 @@ public class PointLight extends Light {
         glUniform1f(linearLocation, linear);
         glUniform1f(exponentLocation, exponent);
     }
+
+    public Vector3f getPosition() {
+        return position;
+    }
+
+    public void setPosition(Vector3f pos) {
+        position = pos;
+    }
+
+    public float getConstant() {
+        return constant;
+    }
+
+    public float getLinear() {
+        return linear;
+    }
+
+    public float getExponent() {
+        return exponent;
+    }
 }

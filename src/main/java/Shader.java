@@ -21,74 +21,25 @@ public class Shader {
         private int uniformConstant;
         private int uniformLinear;
         private int uniformExponent;
-
-        public int getUniformColour() {
-            return uniformColour;
-        }
-
-        public void setUniformColour(int uniformColour) {
-            this.uniformColour = uniformColour;
-        }
-
-        public int getUniformAmbientIntensity() {
-            return uniformAmbientIntensity;
-        }
-
-        public void setUniformAmbientIntensity(int uniformAmbientIntensity) {
-            this.uniformAmbientIntensity = uniformAmbientIntensity;
-        }
-
-        public int getUniformDiffuseIntensity() {
-            return uniformDiffuseIntensity;
-        }
-
-        public void setUniformDiffuseIntensity(int uniformDiffuseIntensity) {
-            this.uniformDiffuseIntensity = uniformDiffuseIntensity;
-        }
-
-        public int getUniformPosition() {
-            return uniformPosition;
-        }
-
-        public void setUniformPosition(int uniformPosition) {
-            this.uniformPosition = uniformPosition;
-        }
-
-        public int getUniformConstant() {
-            return uniformConstant;
-        }
-
-        public void setUniformConstant(int uniformConstant) {
-            this.uniformConstant = uniformConstant;
-        }
-
-        public int getUniformLinear() {
-            return uniformLinear;
-        }
-
-        public void setUniformLinear(int uniformLinear) {
-            this.uniformLinear = uniformLinear;
-        }
-
-        public int getUniformExponent() {
-            return uniformExponent;
-        }
-
-        public void setUniformExponent(int uniformExponent) {
-            this.uniformExponent = uniformExponent;
-        }
     }
+
+    private class UniformSpotLight {
+        private int uniformColour;
+        private int uniformAmbientIntensity;
+        private int uniformDiffuseIntensity;
+        private int uniformPosition;
+        private int uniformConstant;
+        private int uniformLinear;
+        private int uniformExponent;
+        private int uniformDirection;
+        private int uniformEdge;
+    }
+
     private int shaderID;
     private int uniformModel;
     private int uniformProjection;
 
     private int uniformView;
-
-    private int uniformAmbientIntensity;
-    private int uniformAmbientColour;
-
-    private int uniformDiffuseIntensity;
-    private int uniformDirection;
 
     private int uniformEyePosition;
     private int uniformSpecularIntensity;
@@ -100,9 +51,17 @@ public class Shader {
 
     private UniformPointLight[] uniformPointLight = new UniformPointLight[CommonValues.MAX_POINT_LIGHTS];
 
+    private int uniformSpotLightCount;
+
+    private UniformSpotLight[] uniformSpotLight = new UniformSpotLight[CommonValues.MAX_SPOT_LIGHTS];
+
     public Shader() {
         for (int i = 0; i < CommonValues.MAX_POINT_LIGHTS; i++) {
             uniformPointLight[i] = new UniformPointLight();
+        }
+
+        for (int i = 0; i < CommonValues.MAX_SPOT_LIGHTS; i++) {
+            uniformSpotLight[i] = new UniformSpotLight();
         }
     }
 
@@ -224,6 +183,39 @@ public class Shader {
             locBuff = "pointLights[" + i + "].exponent";
             uniformPointLight[i].uniformExponent = glGetUniformLocation(shaderID, locBuff);
         }
+
+        uniformSpotLightCount = glGetUniformLocation(shaderID, "spotLightCount");
+
+        for (int i = 0; i < CommonValues.MAX_SPOT_LIGHTS; i++) {
+            String locBuff;
+
+            locBuff = "spotLights[" + i + "].base.base.colour";
+            uniformSpotLight[i].uniformColour = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "spotLights[" + i + "].base.base.ambientIntensity";
+            uniformSpotLight[i].uniformAmbientIntensity = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "spotLights[" + i + "].base.base.diffuseIntensity";
+            uniformSpotLight[i].uniformDiffuseIntensity = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "spotLights[" + i + "].base.position";
+            uniformSpotLight[i].uniformPosition = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "spotLights[" + i + "].base.constant";
+            uniformSpotLight[i].uniformConstant = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "spotLights[" + i + "].base.linear";
+            uniformSpotLight[i].uniformLinear = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "spotLights[" + i + "].base.exponent";
+            uniformSpotLight[i].uniformExponent = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "spotLights[" + i + "].direction";
+            uniformSpotLight[i].uniformDirection = glGetUniformLocation(shaderID, locBuff);
+
+            locBuff = "spotLights[" + i + "].edge";
+            uniformSpotLight[i].uniformEdge = glGetUniformLocation(shaderID, locBuff);
+        }
     }
 
     public void useShader() {
@@ -260,6 +252,21 @@ public class Shader {
         }
     }
 
+    void setSpotLights(SpotLight sLight[], int lightCount) {
+        if (lightCount > CommonValues.MAX_SPOT_LIGHTS) {
+            lightCount = CommonValues.MAX_SPOT_LIGHTS;
+        }
+
+        glUniform1i(uniformSpotLightCount, lightCount);
+
+        for (int i = 0; i < lightCount; i++) {
+            sLight[i].useLight(uniformSpotLight[i].uniformAmbientIntensity, uniformSpotLight[i].uniformColour,
+                    uniformSpotLight[i].uniformDiffuseIntensity, uniformSpotLight[i].uniformPosition, uniformSpotLight[i].uniformDirection,
+                    uniformSpotLight[i].uniformConstant, uniformSpotLight[i].uniformLinear, uniformSpotLight[i].uniformExponent,
+                    uniformSpotLight[i].uniformEdge);
+        }
+    }
+
     public int getUniformModel() {
         return uniformModel;
     }
@@ -269,22 +276,6 @@ public class Shader {
     }
 
     public int getUniformView() { return uniformView; }
-
-    public int getUniformAmbientIntensity() {
-        return uniformAmbientIntensity;
-    }
-
-    public int getUniformAmbientColour() {
-        return uniformAmbientColour;
-    }
-
-    public int getUniformDiffuseIntensity() {
-        return uniformDiffuseIntensity;
-    }
-
-    public int getUniformDirection() {
-        return uniformDirection;
-    }
 
     public int getUniformEyePosition() {
         return uniformEyePosition;

@@ -83,6 +83,8 @@ public class Camera {
         return position;
     }
 
+    public Vector3f getDirection() { return front.normalize(); }
+
     private void update() {
         front.x = (float) (Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)));
         front.y = (float) Math.sin(Math.toRadians(pitch));
