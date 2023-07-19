@@ -28,7 +28,7 @@ public class Texture {
         this.fileLocation = root + "/target/classes/" + fileLocation;
     }
 
-    public void loadTexture() {
+    public boolean loadTextureA() {
         IntBuffer x = BufferUtils.createIntBuffer(1);
         IntBuffer y = BufferUtils.createIntBuffer(1);
         IntBuffer channels = BufferUtils.createIntBuffer(1);
@@ -36,7 +36,7 @@ public class Texture {
         ByteBuffer texData = stbi_load(fileLocation, x, y, channels, 0);
         if (texData == null) {
             System.out.println("Failed to find: " + fileLocation);
-            System.exit(1);
+            return false;
         }
         width = x.get(0);
         height = y.get(0);
@@ -57,6 +57,39 @@ public class Texture {
 
         stbi_image_free(texData);
 
+        return true;
+    }
+
+    public boolean loadTexture() {
+        IntBuffer x = BufferUtils.createIntBuffer(1);
+        IntBuffer y = BufferUtils.createIntBuffer(1);
+        IntBuffer channels = BufferUtils.createIntBuffer(1);
+
+        ByteBuffer texData = stbi_load(fileLocation, x, y, channels, 0);
+        if (texData == null) {
+            System.out.println("Failed to find: " + fileLocation);
+            return false;
+        }
+        width = x.get(0);
+        height = y.get(0);
+        bitDepth = channels.get(0);
+
+        textureID = glGenTextures();
+        glBindTexture(GL_TEXTURE_2D, textureID);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        stbi_image_free(texData);
+
+        return true;
     }
 
     public void useTexture() {

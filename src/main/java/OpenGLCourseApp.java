@@ -37,6 +37,10 @@ public class OpenGLCourseApp {
     private Material shinyMaterial;
     private Material dullMaterial;
 
+    private Model xwing;
+    private Model blackhawk;
+    private Model tooth30;
+
     private DirectionalLight mainLight;
     private PointLight[] pointLights = new PointLight[CommonValues.MAX_POINT_LIGHTS];
     private SpotLight[] spotLights = new SpotLight[CommonValues.MAX_SPOT_LIGHTS];
@@ -125,17 +129,25 @@ public class OpenGLCourseApp {
                 -90.0f, 0.0f, 5.0f, 0.5f);
 
         brickTexture = new Texture("Textures/brick.png");
-        brickTexture.loadTexture();
+        brickTexture.loadTextureA();
         dirtTexture = new Texture("Textures/dirt.png");
-        dirtTexture.loadTexture();
+        dirtTexture.loadTextureA();
         plainTexture = new Texture("Textures/plain.png");
-        plainTexture.loadTexture();
+        plainTexture.loadTextureA();
 
         shinyMaterial = new Material(4.0f, 256);
         dullMaterial = new Material(0.3f, 4);
 
+        xwing = new Model();
+        xwing.loadModel("D:/gitrepos/OpenGLCourseApp/src/main/resources/Models/x-wing.obj");
+
+        blackhawk = new Model();
+        blackhawk.loadModel("D:/gitrepos/OpenGLCourseApp/src/main/resources/Models/uh60.obj");
+
+        tooth30 = new Model();
+        tooth30.loadModel("D:/gitrepos/OpenGLCourseApp/src/main/resources/Models/Lower_Right_First_Molar_30_Enamel.obj");
         mainLight = new DirectionalLight(1.0f, 1.0f, 1.0f,
-                0.1f, 2.0f,
+                0.2f, 0.4f,
                 0.0f, 0.0f, -1.0f);
 
         int pointLightCount = 0;
@@ -143,12 +155,12 @@ public class OpenGLCourseApp {
                 0.0f, 1.0f,
                 0.0f, 0.0f, 0.0f,
                 0.3f, 0.2f, 0.1f);
-        //pointLightCount++;
+        pointLightCount++;
         pointLights[1] = new PointLight(0.0f, 1.0f, 0.0f,
                 0.0f, 1.0f,
                 -4.0f, 2.0f, 0.0f,
                 0.3f, 0.1f, 0.1f);
-        //pointLightCount++;
+        pointLightCount++;
 
         int spotLightCount = 0;
         spotLights[0] = new SpotLight(1.0f, 1.0f, 1.0f,
@@ -197,7 +209,7 @@ public class OpenGLCourseApp {
 
             Vector3f lowerLight = new Vector3f(camera.getPosition());
             lowerLight.y -= 0.3f;
-            spotLights[0].setFlash(lowerLight, camera.getDirection());
+            //spotLights[0].setFlash(lowerLight, camera.getDirection());
 
             shader.setDirectionalLight(mainLight);
             shader.setPointLights(pointLights, pointLightCount);
@@ -235,6 +247,37 @@ public class OpenGLCourseApp {
             dirtTexture.useTexture();
             shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
             meshList.get(2).renderMesh();
+
+            // X-Wing
+            /*
+                         */
+            model = new Matrix4f();
+            model = model.translate(-7.0f, 0.0f, 10.0f);
+            model = model.scale(0.006f, 0.006f, 0.006f);
+            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+            dirtTexture.useTexture();
+            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
+            xwing.renderModel();
+
+            // Blackhawk
+            model = new Matrix4f();
+            model = model.translate(-3.0f, 2.0f, 0.0f);
+            model = model.rotate((float)Math.toRadians(-90.0f), new Vector3f(1.0f, 0.0f, 0.0f));
+            model = model.scale(0.4f, 0.4f, 0.4f);
+            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+            dirtTexture.useTexture();
+            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
+            blackhawk.renderModel();
+
+            // Tooth30
+            model = new Matrix4f();
+            model = model.translate(-10.0f, 2.0f, 10.0f);
+            model = model.rotate((float)Math.toRadians(-90.0f), new Vector3f(1.0f, 0.0f, 0.0f));
+            model = model.scale(0.05f, 0.05f, 0.05f);
+            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+            dirtTexture.useTexture();
+            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
+            tooth30.renderModel();
 
             glUseProgram(0);
 
