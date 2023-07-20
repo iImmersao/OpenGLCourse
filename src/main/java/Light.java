@@ -1,8 +1,5 @@
 import org.joml.Vector3f;
 
-import static org.lwjgl.opengl.GL20.glUniform1f;
-import static org.lwjgl.opengl.GL20.glUniform3f;
-
 public class Light {
     private Vector3f colour;
 

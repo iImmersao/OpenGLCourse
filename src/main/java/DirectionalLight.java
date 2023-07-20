@@ -1,7 +1,6 @@
 import org.joml.Vector3f;
-
-import static org.lwjgl.opengl.GL20.glUniform1f;
-import static org.lwjgl.opengl.GL20.glUniform3f;
+import static org.lwjgl.opengl.GL33.glUniform1f;
+import static org.lwjgl.opengl.GL33.glUniform3f;
 
 public class DirectionalLight extends Light {
 

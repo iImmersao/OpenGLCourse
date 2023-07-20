@@ -7,8 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.glfwGetTime;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL33.*;
 
 public class OpenGLCourseApp {
 
@@ -40,6 +39,9 @@ public class OpenGLCourseApp {
     private Model xwing;
     private Model blackhawk;
     private Model tooth30;
+    private Model sphere;
+    private Model eyeball;
+    private Model airliner;
 
     private DirectionalLight mainLight;
     private PointLight[] pointLights = new PointLight[CommonValues.MAX_POINT_LIGHTS];
@@ -91,10 +93,10 @@ public class OpenGLCourseApp {
         };
 
         float[] floorVertices = {
-                -10.0f, 0.0f, -10.f,   0.0f, 0.0f,        0.0f, -1.0f, 0.0f,
-                10.0f, 0.0f, -10.f,    10.0f, 0.0f,       0.0f, -1.0f, 0.0f,
-                -10.0f, 0.0f, 10.0f,   0.0f, 10.0f,       0.0f, -1.0f, 0.0f,
-                10.0f, 0.0f, 10.0f,    10.0f, 10.0f,      0.0f, -1.0f, 0.0f
+                -20.0f, 0.0f, -20.f,   0.0f, 0.0f,        0.0f, -1.0f, 0.0f,
+                20.0f, 0.0f, -20.f,    20.0f, 0.0f,       0.0f, -1.0f, 0.0f,
+                -20.0f, 0.0f, 20.0f,   0.0f, 20.0f,       0.0f, -1.0f, 0.0f,
+                20.0f, 0.0f, 20.0f,    20.0f, 20.0f,      0.0f, -1.0f, 0.0f
         };
 
         calcAverageNormals(indices, vertices, 8, 5);
@@ -138,14 +140,36 @@ public class OpenGLCourseApp {
         shinyMaterial = new Material(4.0f, 256);
         dullMaterial = new Material(0.3f, 4);
 
+        /*
+         */
         xwing = new Model();
         xwing.loadModel("D:/gitrepos/OpenGLCourseApp/src/main/resources/Models/x-wing.obj");
 
+        /*
+         */
         blackhawk = new Model();
         blackhawk.loadModel("D:/gitrepos/OpenGLCourseApp/src/main/resources/Models/uh60.obj");
 
+        /*
+         */
         tooth30 = new Model();
         tooth30.loadModel("D:/gitrepos/OpenGLCourseApp/src/main/resources/Models/Lower_Right_First_Molar_30_Enamel.obj");
+
+        /*
+        sphere = new Model();
+        sphere.loadModel("D:/gitrepos/OpenGLCourseApp/src/main/resources/Models/sphere2.obj");
+         */
+
+        /*
+        eyeball = new Model();
+        eyeball.loadModel("D:/gitrepos/OpenGLCourseApp/src/main/resources/Models/eyeball.obj");
+         */
+
+        /*
+        airliner = new Model();
+        airliner.loadModel("D:/gitrepos/OpenGLCourseApp/src/main/resources/Models/11803_Airplane_v1_l1.obj");
+         */
+
         mainLight = new DirectionalLight(1.0f, 1.0f, 1.0f,
                 0.2f, 0.4f,
                 0.0f, 0.0f, -1.0f);
@@ -260,6 +284,8 @@ public class OpenGLCourseApp {
             xwing.renderModel();
 
             // Blackhawk
+            /*
+             */
             model = new Matrix4f();
             model = model.translate(-3.0f, 2.0f, 0.0f);
             model = model.rotate((float)Math.toRadians(-90.0f), new Vector3f(1.0f, 0.0f, 0.0f));
@@ -270,14 +296,47 @@ public class OpenGLCourseApp {
             blackhawk.renderModel();
 
             // Tooth30
+            /*
+             */
             model = new Matrix4f();
-            model = model.translate(-10.0f, 2.0f, 10.0f);
+            model = model.translate(-15.0f, 2.0f, -20.0f);
             model = model.rotate((float)Math.toRadians(-90.0f), new Vector3f(1.0f, 0.0f, 0.0f));
             model = model.scale(0.05f, 0.05f, 0.05f);
             glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
             dirtTexture.useTexture();
             shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
             tooth30.renderModel();
+
+            /*
+            model = new Matrix4f();
+            model = model.translate(-5.0f, 2.0f, 5.0f);
+            //model = model.scale(0.006f, 0.006f, 0.006f);
+            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+            dirtTexture.useTexture();
+            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
+            sphere.renderModel();
+             */
+
+            /*
+            model = new Matrix4f();
+            model = model.translate(-10.0f, 2.0f, 15.0f);
+            //model = model.scale(0.006f, 0.006f, 0.006f);
+            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+            dirtTexture.useTexture();
+            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
+            eyeball.renderModel();
+             */
+
+            /*
+            model = new Matrix4f();
+            model = model.translate(10.0f, 2.0f, 20.0f);
+            model = model.rotate((float)Math.toRadians(-90.0f), new Vector3f(1.0f, 0.0f, 0.0f));
+            model = model.scale(0.01f, 0.01f, 0.01f);
+            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+            dirtTexture.useTexture();
+            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
+            airliner.renderModel();
+             */
 
             glUseProgram(0);
 

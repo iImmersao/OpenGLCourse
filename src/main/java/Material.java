@@ -1,4 +1,4 @@
-import static org.lwjgl.opengl.GL20.glUniform1f;
+import static org.lwjgl.opengl.GL33.glUniform1f;
 
 public class Material {
     private float specularIntensity;

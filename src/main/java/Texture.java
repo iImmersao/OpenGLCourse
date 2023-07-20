@@ -3,10 +3,10 @@ import org.lwjgl.BufferUtils;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
-import static org.lwjgl.opengl.GL13.glActiveTexture;
-import static org.lwjgl.opengl.GL30.glGenerateMipmap;
+import static org.lwjgl.opengl.GL33.*;
+import static org.lwjgl.opengl.GL33.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL33.glActiveTexture;
+import static org.lwjgl.opengl.GL33.glGenerateMipmap;
 import static org.lwjgl.stb.STBImage.stbi_image_free;
 import static org.lwjgl.stb.STBImage.stbi_load;
 
@@ -73,6 +73,9 @@ public class Texture {
         width = x.get(0);
         height = y.get(0);
         bitDepth = channels.get(0);
+
+        //System.out.println("Texture width = " + width + " height = " + height);
+        //System.out.println("Texdata length is " + texData.remaining());
 
         textureID = glGenTextures();
         glBindTexture(GL_TEXTURE_2D, textureID);

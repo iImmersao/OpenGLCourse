@@ -1,8 +1,8 @@
 import java.io.*;
 import java.nio.ByteBuffer;
 
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL20.glGetUniformLocation;
+import static org.lwjgl.opengl.GL33.*;
+import static org.lwjgl.opengl.GL33.glGetUniformLocation;
 
 public class Shader {
     private class UniformDirectionalLight {
@@ -97,7 +97,7 @@ public class Shader {
     static void AddShader(int theProgram, String shaderCode, int shaderType) {
         int theShader = glCreateShader(shaderType);
 
-        System.out.println(shaderCode);
+        //System.out.println(shaderCode);
         glShaderSource(theShader, shaderCode);
         glCompileShader(theShader);
 
