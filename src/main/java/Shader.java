@@ -1,10 +1,18 @@
+import org.joml.Matrix4f;
+
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import static org.lwjgl.opengl.GL33.*;
 import static org.lwjgl.opengl.GL33.glGetUniformLocation;
 
 public class Shader {
+    private class UniformOmniShadowMap {
+        private int shadowMap;
+        private int farPlane;
+    }
+
     private class UniformDirectionalLight {
         private int uniformColour;
         private int uniformAmbientIntensity;
@@ -45,6 +53,64 @@ public class Shader {
     private int uniformSpecularIntensity;
     private int uniformShininess;
 
+    private int uniformTexture;
+    private int uniformDirectionalLightTransform;
+    private int uniformDirectionalShadowMap;
+    private int uniformOmniLightPos;
+    private int uniformFarPlane;
+
+    private int[] uniformLightMatrices = new int[6];
+
+    private UniformOmniShadowMap[] uniformOmniShadowMap = new UniformOmniShadowMap[CommonValues.MAX_POINT_LIGHTS + CommonValues.MAX_SPOT_LIGHTS];
+
+    void setUniformLightMatrices(List<Matrix4f> lightMatrices)
+    {
+        float[] matArr = new float[16];
+        for (int i = 0; i < 6; i++) {
+            glUniformMatrix4fv(uniformLightMatrices[i], false, lightMatrices.get(i).get(matArr));
+        }
+    }
+
+    public int getUniformTexture() {
+        return uniformTexture;
+    }
+
+    public void setUniformTexture(int uniformTexture) {
+        this.uniformTexture = uniformTexture;
+    }
+
+    public int getUniformDirectionalLightTransform() {
+        return uniformDirectionalLightTransform;
+    }
+
+    public void setUniformDirectionalLightTransform(int uniformDirectionalLightTransform) {
+        this.uniformDirectionalLightTransform = uniformDirectionalLightTransform;
+    }
+
+    public int getUniformDirectionalShadowMap() {
+        return uniformDirectionalShadowMap;
+    }
+
+    public void setUniformDirectionalShadowMap(int uniformDirectionalShadowMap) {
+        this.uniformDirectionalShadowMap = uniformDirectionalShadowMap;
+    }
+
+    public int getUniformOmniLightPos() {
+        return uniformOmniLightPos;
+    }
+
+    public void setUniformOmniLightPos(int uniformOmniLightPos) {
+        this.uniformOmniLightPos = uniformOmniLightPos;
+    }
+
+    public int getUniformFarPlane() {
+        return uniformFarPlane;
+    }
+
+    public void setUniformFarPlane(int uniformFarPlane) {
+        this.uniformFarPlane = uniformFarPlane;
+    }
+
     private UniformDirectionalLight uniformDirectionalLight = new UniformDirectionalLight();
 
     private int uniformPointLightCount;
@@ -63,6 +129,10 @@ public class Shader {
         for (int i = 0; i < CommonValues.MAX_SPOT_LIGHTS; i++) {
             uniformSpotLight[i] = new UniformSpotLight();
         }
+
+        for (int i = 0; i < CommonValues.MAX_POINT_LIGHTS + CommonValues.MAX_SPOT_LIGHTS; i++) {
+            uniformOmniShadowMap[i] = new UniformOmniShadowMap();
+        }
     }
 
     public void createFromString(String vertexCode, String fragmentCode) {
@@ -73,6 +143,30 @@ public class Shader {
         String vertexString = readFile(vertexFilename);
         String fragmentString = readFile(fragmentFilename);
         compileShader(vertexString, fragmentString);
+    }
+
+    public void createFromFiles(String vertexLocation, String geometryLocation, String fragmentLocation)
+    {
+        String vertexString = readFile(vertexLocation);
+        String geometryString = readFile(geometryLocation);
+        String fragmentString = readFile(fragmentLocation);
+        compileShader(vertexString, geometryString, fragmentString);
+    }
+
+    void validate()
+    {
+        int[] result = { 0 };
+        byte[] eLogRaw = new byte[1024];
+        ByteBuffer eLog = ByteBuffer.wrap(eLogRaw);
+
+        glValidateProgram(shaderID);
+        glGetProgramiv(shaderID, GL_LINK_STATUS, result);
+        if (result[0] != 1) {
+            glGetProgramInfoLog(shaderID, result, eLog);
+            System.out.println("Error validating program: " + eLog);
+            return;
+        }
+
     }
 
     private String readFile(String fileName) {
@@ -126,6 +220,27 @@ public class Shader {
         AddShader(shaderID, vertexCode, GL_VERTEX_SHADER);
         AddShader(shaderID, fragmentCode, GL_FRAGMENT_SHADER);
 
+        CompileProgram();
+    }
+
+
+    public void compileShader(String vertexCode, String geometryCode, String fragmentCode) {
+        shaderID = glCreateProgram();
+
+        if (shaderID < 0) {
+            System.out.println("Error creating shader program!");
+            return;
+        }
+
+        AddShader(shaderID, vertexCode, GL_VERTEX_SHADER);
+        AddShader(shaderID, geometryCode, GL_GEOMETRY_SHADER);
+        AddShader(shaderID, fragmentCode, GL_FRAGMENT_SHADER);
+
+        CompileProgram();
+    }
+
+    private void CompileProgram() {
+
         int[] result = { 0 };
         byte[] eLogRaw = new byte[1024];
         ByteBuffer eLog = ByteBuffer.wrap(eLogRaw);
@@ -138,6 +253,7 @@ public class Shader {
             return;
         }
 
+        /*
         glValidateProgram(shaderID);
         glGetProgramiv(shaderID, GL_VALIDATE_STATUS, result);
         if (result[0] != 1) {
@@ -145,6 +261,7 @@ public class Shader {
             System.out.println("Error validating program: " + eLog);
             return;
         }
+         */
 
         uniformModel = glGetUniformLocation(shaderID, "model");
         uniformProjection = glGetUniformLocation(shaderID, "projection");
@@ -216,6 +333,29 @@ public class Shader {
             locBuff = "spotLights[" + i + "].edge";
             uniformSpotLight[i].uniformEdge = glGetUniformLocation(shaderID, locBuff);
         }
+
+        uniformTexture = glGetUniformLocation(shaderID, "theTexture");
+        uniformDirectionalLightTransform = glGetUniformLocation(shaderID, "directionalLight");
+        uniformDirectionalShadowMap = glGetUniformLocation(shaderID, "directionalShadowMap");
+
+        uniformOmniLightPos = glGetUniformLocation(shaderID, "lightPos");
+        uniformFarPlane = glGetUniformLocation(shaderID, "farPlane");
+
+        for (int i = 0; i < 6; i++) {
+            String locBuff;
+
+            locBuff = "lightMatrices[" + i + "]";
+            uniformLightMatrices[i] = glGetUniformLocation(shaderID, locBuff);
+        }
+
+        for (int i = 0; i < CommonValues.MAX_POINT_LIGHTS + CommonValues.MAX_SPOT_LIGHTS; i++) {
+            String locBuff;
+
+            locBuff = "omniShadowMaps[" + i + "].shadowMap";
+            uniformOmniShadowMap[i].shadowMap = glGetUniformLocation(shaderID, locBuff);
+            locBuff = "omniShadowMaps[" + i + "].farPlane";
+            uniformOmniShadowMap[i].farPlane = glGetUniformLocation(shaderID, locBuff);
+        }
     }
 
     public void useShader() {
@@ -238,7 +378,7 @@ public class Shader {
                 uniformDirectionalLight.uniformDiffuseIntensity, uniformDirectionalLight.uniformDirection);
     }
 
-    void setPointLights(PointLight pLight[], int lightCount) {
+    void setPointLights(PointLight[] pLight, int lightCount, int textureUnit, int offset) {
         if (lightCount > CommonValues.MAX_POINT_LIGHTS) {
             lightCount = CommonValues.MAX_POINT_LIGHTS;
         }
@@ -249,12 +389,16 @@ public class Shader {
             pLight[i].useLight(uniformPointLight[i].uniformAmbientIntensity, uniformPointLight[i].uniformColour,
                     uniformPointLight[i].uniformDiffuseIntensity, uniformPointLight[i].uniformPosition,
                     uniformPointLight[i].uniformConstant, uniformPointLight[i].uniformLinear, uniformPointLight[i].uniformExponent);
+
+            pLight[i].getShadowMap().read(GL_TEXTURE0 + textureUnit + i);
+            glUniform1i(uniformOmniShadowMap[i + offset].shadowMap, textureUnit + i);
+            glUniform1f(uniformOmniShadowMap[i + offset].farPlane, pLight[i].getFarPlane());
         }
     }
 
-    void setSpotLights(SpotLight sLight[], int lightCount) {
-        if (lightCount > CommonValues.MAX_SPOT_LIGHTS) {
-            lightCount = CommonValues.MAX_SPOT_LIGHTS;
+    void setSpotLights(SpotLight[] sLight, int lightCount, int textureUnit, int offset) {
+        if (lightCount > CommonValues.MAX_POINT_LIGHTS) {
+            lightCount = CommonValues.MAX_POINT_LIGHTS;
         }
 
         glUniform1i(uniformSpotLightCount, lightCount);
@@ -264,6 +408,10 @@ public class Shader {
                     uniformSpotLight[i].uniformDiffuseIntensity, uniformSpotLight[i].uniformPosition, uniformSpotLight[i].uniformDirection,
                     uniformSpotLight[i].uniformConstant, uniformSpotLight[i].uniformLinear, uniformSpotLight[i].uniformExponent,
                     uniformSpotLight[i].uniformEdge);
+
+            sLight[i].getShadowMap().read(GL_TEXTURE0 + textureUnit + i);
+            glUniform1i(uniformOmniShadowMap[i + offset].shadowMap, textureUnit + i);
+            glUniform1f(uniformOmniShadowMap[i + offset].farPlane, sLight[i].getFarPlane());
         }
     }
 
@@ -287,5 +435,20 @@ public class Shader {
 
     public int getUniformShininess() {
         return uniformShininess;
+    }
+
+    public void setTexture(int textureUnit) {
+        glUniform1i(uniformTexture, textureUnit);
+    }
+
+    public void setDirectionalShadowMap(int textureUnit) {
+        glUniform1i(uniformDirectionalShadowMap, textureUnit);
+    }
+
+    public void setUniformDirectionalLightTransform(Matrix4f lTransform) {
+        float[] modelArr = new float[16];
+        lTransform.get(modelArr);
+
+        glUniformMatrix4fv(uniformDirectionalLightTransform, false, modelArr);
     }
 }

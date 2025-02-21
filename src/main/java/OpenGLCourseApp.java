@@ -3,9 +3,11 @@ import org.joml.Vector3f;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_L;
 import static org.lwjgl.glfw.GLFW.glfwGetTime;
 import static org.lwjgl.opengl.GL33.*;
 
@@ -14,6 +16,8 @@ public class OpenGLCourseApp {
     private float deltaTime = 0.0f;
 
     private float lastTime = 0.0f;
+
+    private float blackhawkAngle = 0.0f;
 
     // Vertex Shader
     final static String vShader = "shader.vert";
@@ -24,6 +28,20 @@ public class OpenGLCourseApp {
     private final List<Mesh> meshList = new LinkedList<>();
 
     private final List<Shader> shaderList = new LinkedList<>();
+
+    Shader directionalShadowShader;
+    Shader omniShadowShader;
+
+    private int uniformProjection = 0;
+    private int uniformModel = 0;
+    private int uniformView = 0;
+    private int uniformEyePosition = 0;
+    private int uniformSpecularIntensity = 0;
+    private int uniformShininess = 0;
+
+    private int uniformDirectionalLightTransform = 0;
+    private int uniformOmniLightPos = 0;
+    private int uniformFarPlane = 0;
 
     private Camera camera;
 
@@ -46,6 +64,11 @@ public class OpenGLCourseApp {
     private DirectionalLight mainLight;
     private PointLight[] pointLights = new PointLight[CommonValues.MAX_POINT_LIGHTS];
     private SpotLight[] spotLights = new SpotLight[CommonValues.MAX_SPOT_LIGHTS];
+
+    private Skybox skybox;
+
+    private int pointLightCount = 0;
+    private int spotLightCount = 0;
 
     public void calcAverageNormals(int[] indices, float[] vertices, int vLength, int normalOffset) {
         for (int i = 0; i < indices.length; i += 3) {
@@ -92,11 +115,20 @@ public class OpenGLCourseApp {
                 1, 2, 3
         };
 
+        /*
         float[] floorVertices = {
                 -20.0f, 0.0f, -20.f,   0.0f, 0.0f,        0.0f, -1.0f, 0.0f,
                 20.0f, 0.0f, -20.f,    20.0f, 0.0f,       0.0f, -1.0f, 0.0f,
                 -20.0f, 0.0f, 20.0f,   0.0f, 20.0f,       0.0f, -1.0f, 0.0f,
                 20.0f, 0.0f, 20.0f,    20.0f, 20.0f,      0.0f, -1.0f, 0.0f
+        };
+         */
+
+        float[] floorVertices = {
+                -10.0f, 0.0f, -10.f,   0.0f, 0.0f,        0.0f, -1.0f, 0.0f,
+                10.0f, 0.0f, -10.f,    10.0f, 0.0f,       0.0f, -1.0f, 0.0f,
+                -10.0f, 0.0f, 10.0f,   0.0f, 10.0f,       0.0f, -1.0f, 0.0f,
+                10.0f, 0.0f, 10.0f,    10.0f, 10.0f,      0.0f, -1.0f, 0.0f
         };
 
         calcAverageNormals(indices, vertices, 8, 5);
@@ -118,7 +150,202 @@ public class OpenGLCourseApp {
         Shader shader1 = new Shader();
         shader1.createFromFiles(vShader, fShader);
         shaderList.add(shader1);
+
+        directionalShadowShader = new Shader();
+        directionalShadowShader.createFromFiles("directional_shadow_map.vert", "directional_shadow_map.frag");
+        omniShadowShader = new Shader();
+        omniShadowShader.createFromFiles("omni_shadow_map.vert", "omni_shadow_map.geom", "omni_shadow_map.frag");
     }
+
+    void RenderScene()
+    {
+        Matrix4f model = new Matrix4f(); // Should be identity matrix?
+
+        float[] modelArr = new float[16];
+
+        model = model.translate(new Vector3f(0.0f, 0.0f, -2.5f));
+        //model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
+        glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+        brickTexture.useTexture();
+        shinyMaterial.useMaterial(uniformSpecularIntensity, uniformShininess);
+        meshList.get(0).renderMesh();
+
+        model = new Matrix4f();
+        model = model.translate(new Vector3f(0.0f, 4.0f, -2.5f));
+        //model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
+        glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+        dirtTexture.useTexture();
+        dullMaterial.useMaterial(uniformSpecularIntensity, uniformShininess);
+        meshList.get(1).renderMesh();
+
+        model = new Matrix4f();
+        model = model.translate(new Vector3f(0.0f, -2.0f, 0.0f));
+        //model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
+        glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+        dirtTexture.useTexture();
+        shinyMaterial.useMaterial(uniformSpecularIntensity, uniformShininess);
+        meshList.get(2).renderMesh();
+
+        /*
+         */
+        model = new Matrix4f();
+        model = model.translate(new Vector3f(-7.0f, 0.0f, 10.0f));
+        model = model.scale(new Vector3f(0.006f, 0.006f, 0.006f));
+        glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+        dirtTexture.useTexture();
+        shinyMaterial.useMaterial(uniformSpecularIntensity, uniformShininess);
+        xwing.renderModel();
+
+        /*
+         */
+        blackhawkAngle += 0.1f;
+        if (blackhawkAngle > 360.0f) {
+            blackhawkAngle = 0.1f;
+        }
+
+        model = new Matrix4f();
+        model = model.rotate(-blackhawkAngle * CommonValues.TO_RADIANS, new Vector3f(0.0f, 1.0f, 0.0f));
+        model = model.translate(new Vector3f(-8.0f, 2.0f, 0.0f));
+        model = model.rotate(-20.0f * CommonValues.TO_RADIANS, new Vector3f(0.0f, 0.0f, 1.0f));
+        model = model.rotate(-90.0f * CommonValues.TO_RADIANS, new Vector3f(1.0f, 0.0f, 0.0f));
+        model = model.scale(new Vector3f(0.4f, 0.4f, 0.4f));
+        glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
+        dirtTexture.useTexture();
+        shinyMaterial.useMaterial(uniformSpecularIntensity, uniformShininess);
+        blackhawk.renderModel();
+
+    /*
+    model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(-10.0f, 2.0f, 10.0f));
+    model = glm::rotate(model, -90.0f * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+    glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+    dirtTexture.UseTexture();
+    shinyMaterial.UseMaterial(uniformSpecaularIntensity, uniformShininess);
+    tooth30.RenderModel();
+    */
+
+    /*
+    model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(-5.0f, 2.0f, 5.0f));
+    //model = glm::scale(model, glm::vec3(10.0f, 10.0f, 10.0f));
+    glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+    dirtTexture.UseTexture();
+    shinyMaterial.UseMaterial(uniformSpecaularIntensity, uniformShininess);
+    sphere.RenderModel();
+    */
+
+    /*
+    model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(-5.0f, 2.0f, 5.0f));
+    //model = glm::scale(model, glm::vec3(10.0f, 10.0f, 10.0f));
+    glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+    dirtTexture.UseTexture();
+    shinyMaterial.UseMaterial(uniformSpecaularIntensity, uniformShininess);
+    eyeball.RenderModel();
+    */
+
+    /*
+    model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(-5.0f, 5.0f, 5.0f));
+    model = glm::rotate(model, -90.0f * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(0.01f, 0.01f, 0.01f));
+    glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+    dirtTexture.UseTexture();
+    shinyMaterial.UseMaterial(uniformSpecaularIntensity, uniformShininess);
+    airliner.RenderModel();
+    */
+    }
+
+    void DirectionalShadowMapPass(DirectionalLight light)
+    {
+        directionalShadowShader.useShader();
+
+        glViewport(0, 0, light.getShadowMap().getShadowWidth(), light.getShadowMap().getShadowHeight());
+
+        light.getShadowMap().write();
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        uniformModel = directionalShadowShader.getUniformModel();
+        Matrix4f transform = light.calculateLightTransform();
+        directionalShadowShader.setUniformDirectionalLightTransform(transform);
+        //directionalShadowShader.SetDirectionalLightTransform(&light->CalculateLightTransform());
+
+        directionalShadowShader.validate();
+
+        RenderScene();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    void OmniShadowMapPass(PointLight light)
+    {
+        glViewport(0, 0, light.getShadowMap().getShadowWidth(), light.getShadowMap().getShadowHeight());
+
+        omniShadowShader.useShader();
+
+        uniformModel = omniShadowShader.getUniformModel();
+        uniformOmniLightPos = omniShadowShader.getUniformOmniLightPos();
+        uniformFarPlane = omniShadowShader.getUniformFarPlane();
+
+        light.getShadowMap().write();
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        glUniform3f(uniformOmniLightPos, light.getPosition().x, light.getPosition().y, light.getPosition().z);
+        glUniform1f(uniformFarPlane, light.getFarPlane());
+        omniShadowShader.setUniformLightMatrices(light.calculateLightTransform());
+
+        omniShadowShader.validate();
+
+        RenderScene();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    }
+
+    void RenderPass(Matrix4f projectionMatrix, Matrix4f viewMatrix)
+    {
+        glViewport(0, 0, 1366, 768);
+
+        // Clear window
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        skybox.DrawSkybox(viewMatrix, projectionMatrix);
+
+        shaderList.get(0).useShader();
+
+        uniformModel = shaderList.get(0).getUniformModel();
+        uniformProjection = shaderList.get(0).getUniformProjection();
+        uniformView = shaderList.get(0).getUniformView();
+        uniformEyePosition = shaderList.get(0).getUniformEyePosition();
+        uniformSpecularIntensity = shaderList.get(0).getUniformSpecularIntensity();
+        uniformShininess = shaderList.get(0).getUniformShininess();
+
+        float[] modelArr = new float[16];
+
+        glUniformMatrix4fv(uniformProjection, false, projectionMatrix.get(modelArr));
+        glUniformMatrix4fv(uniformView, false, viewMatrix.get(modelArr));
+        glUniform3f(uniformEyePosition, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+
+        shaderList.get(0).setDirectionalLight(mainLight);
+        shaderList.get(0).setPointLights(pointLights, pointLightCount, 3, 0);
+        shaderList.get(0).setSpotLights(spotLights, spotLightCount, 3 + pointLightCount, pointLightCount);
+        Matrix4f transform = mainLight.calculateLightTransform();
+        shaderList.get(0).setUniformDirectionalLightTransform(transform);
+        //shaderList[0].SetDirectionalLightTransform(&mainLight.CalculateLightTransform());
+
+        mainLight.getShadowMap().read(GL_TEXTURE2);
+        shaderList.get(0).setTexture(1);
+        shaderList.get(0).setDirectionalShadowMap(2);
+
+        Vector3f lowerLight = new Vector3f(camera.getPosition());
+        lowerLight.y -= 0.3f;
+        spotLights[0].setFlash(lowerLight, camera.getDirection());
+
+        RenderScene();
+    }
+
     public void run() {
         mainWindow = new Window(1368, 768);
         mainWindow.initialise();
@@ -170,31 +397,40 @@ public class OpenGLCourseApp {
         airliner.loadModel("D:/gitrepos/OpenGLCourseApp/src/main/resources/Models/11803_Airplane_v1_l1.obj");
          */
 
-        mainLight = new DirectionalLight(1.0f, 1.0f, 1.0f,
-                0.2f, 0.4f,
-                0.0f, 0.0f, -1.0f);
+        mainLight = new DirectionalLight(2048, 2048,
+                1.0f, 0.53f, 0.3f,
+                0.1f, 0.9f,
+                -10.0f, -12.0f, 18.5f);
 
-        int pointLightCount = 0;
-        pointLights[0] = new PointLight(0.0f, 0.0f, 1.0f,
+        //int pointLightCount = 0;
+        pointLights[0] = new PointLight(1024, 1024,
+                0.01f, 100.0f,
+                0.0f, 0.0f, 1.0f,
                 0.0f, 1.0f,
-                0.0f, 0.0f, 0.0f,
+                1.0f, 2.0f, 0.0f,
                 0.3f, 0.2f, 0.1f);
         pointLightCount++;
-        pointLights[1] = new PointLight(0.0f, 1.0f, 0.0f,
+        pointLights[1] = new PointLight(1024, 1024,
+                0.01f, 100.0f,
+                0.0f, 1.0f, 0.0f,
                 0.0f, 1.0f,
-                -4.0f, 2.0f, 0.0f,
-                0.3f, 0.1f, 0.1f);
+                -4.0f, 3.0f, 0.0f,
+                0.3f, 0.2f, 0.1f);
         pointLightCount++;
 
-        int spotLightCount = 0;
-        spotLights[0] = new SpotLight(1.0f, 1.0f, 1.0f,
+        //int spotLightCount = 0;
+        spotLights[0] = new SpotLight(1024, 1024,
+                0.01f, 100.0f,
+                1.0f, 1.0f, 1.0f,
                 0.0f, 2.0f,
                 0.0f, 0.0f, 0.0f,
                 0.0f, -1.0f, 0.0f,
                 1.0f, 0.0f, 0.0f,
                 20.0f);
         spotLightCount++;
-        spotLights[1] = new SpotLight(1.0f, 1.0f, 1.0f,
+        spotLights[1] = new SpotLight(1024, 1024,
+                0.01f, 100.0f,
+                1.0f, 1.0f, 1.0f,
                 0.0f, 1.0f,
                 0.0f, 1.5f, 0.0f,
                 -2.0f, -1.0f, 0.0f,
@@ -202,11 +438,24 @@ public class OpenGLCourseApp {
                 20.0f);
         spotLightCount++;
 
+
+        /*
         int uniformModel, uniformProjection, uniformView, uniformEyePosition,
                 uniformSpecaularIntensity, uniformShininess;
+         */
+
+        String[] skyboxFaces = new String[6];
+        skyboxFaces[0] = "Textures/Skybox/cupertin-lake_rt.tga";
+        skyboxFaces[1] = "Textures/Skybox/cupertin-lake_lf.tga";
+        skyboxFaces[2] = "Textures/Skybox/cupertin-lake_up.tga";
+        skyboxFaces[3] = "Textures/Skybox/cupertin-lake_dn.tga";
+        skyboxFaces[4] = "Textures/Skybox/cupertin-lake_bk.tga";
+        skyboxFaces[5] = "Textures/Skybox/cupertin-lake_ft.tga";
+
+        skybox = new Skybox(skyboxFaces);
 
         Matrix4f projection = new Matrix4f();
-        projection.setPerspective((float) Math.toRadians(45.0f), (float)mainWindow.getBufferWidth()/(float)mainWindow.getBufferHeight(),
+        projection.setPerspective((float) Math.toRadians(60.0f), (float)mainWindow.getBufferWidth()/(float)mainWindow.getBufferHeight(),
                 0.1f, 100.0f);
 
         while (!mainWindow.getShouldClose()) {
@@ -219,124 +468,22 @@ public class OpenGLCourseApp {
             camera.keyControl(mainWindow.getKeys(), deltaTime);
             camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
 
-            GL33.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            GL33.glClear(GL33.GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            if (mainWindow.getKeys()[GLFW.GLFW_KEY_L]) {
+                spotLights[0].toggle();
+                mainWindow.getKeys()[GLFW.GLFW_KEY_L] = false;
+            }
 
-            Shader shader = shaderList.get(0);
-            shader.useShader();
-            uniformModel = shader.getUniformModel();
-            uniformProjection = shader.getUniformProjection();
-            uniformView = shader.getUniformView();
-            uniformEyePosition = shader.getUniformEyePosition();
-            uniformSpecaularIntensity = shader.getUniformSpecularIntensity();
-            uniformShininess = shader.getUniformShininess();
+            DirectionalShadowMapPass(mainLight);
 
-            Vector3f lowerLight = new Vector3f(camera.getPosition());
-            lowerLight.y -= 0.3f;
-            //spotLights[0].setFlash(lowerLight, camera.getDirection());
+            for (int i = 0; i < pointLightCount; i++) {
+                OmniShadowMapPass(pointLights[i]);
+            }
 
-            shader.setDirectionalLight(mainLight);
-            shader.setPointLights(pointLights, pointLightCount);
-            shader.setSpotLights(spotLights, spotLightCount);
+            for (int i = 0; i < spotLightCount; i++) {
+                OmniShadowMapPass(spotLights[i]);
+            }
 
-            float[] perspectiveArr = new float[16];
-            glUniformMatrix4fv(uniformProjection, false, projection.get(perspectiveArr));
-            float[] viewArr = new float[16];
-            glUniformMatrix4fv(uniformView, false, camera.calculateViewMatrix().get(viewArr));
-            glUniform3f(uniformEyePosition, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
-
-            Matrix4f model = new Matrix4f();
-            model = model.translate(0.0f, 0.0f, -2.5f);
-            //model = model.scale(0.4f, 0.4f, 1.0f);
-
-            float[] modelArr = new float[16];
-            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
-
-            brickTexture.useTexture();
-            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
-            meshList.get(0).renderMesh();
-
-            model = new Matrix4f();
-            model = model.translate(0.0f, 4.0f, -2.5f);
-            //model = model.scale(0.4f, 0.4f, 1.0f);
-            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
-            dirtTexture.useTexture();
-            dullMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
-            meshList.get(1).renderMesh();
-
-            model = new Matrix4f();
-            model = model.translate(0.0f, -2.0f, 0.0f);
-            //model = model.scale(0.4f, 0.4f, 1.0f);
-            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
-            dirtTexture.useTexture();
-            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
-            meshList.get(2).renderMesh();
-
-            // X-Wing
-            /*
-                         */
-            model = new Matrix4f();
-            model = model.translate(-7.0f, 0.0f, 10.0f);
-            model = model.scale(0.006f, 0.006f, 0.006f);
-            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
-            dirtTexture.useTexture();
-            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
-            xwing.renderModel();
-
-            // Blackhawk
-            /*
-             */
-            model = new Matrix4f();
-            model = model.translate(-3.0f, 2.0f, 0.0f);
-            model = model.rotate((float)Math.toRadians(-90.0f), new Vector3f(1.0f, 0.0f, 0.0f));
-            model = model.scale(0.4f, 0.4f, 0.4f);
-            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
-            dirtTexture.useTexture();
-            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
-            blackhawk.renderModel();
-
-            // Tooth30
-            /*
-             */
-            model = new Matrix4f();
-            model = model.translate(-15.0f, 2.0f, -20.0f);
-            model = model.rotate((float)Math.toRadians(-90.0f), new Vector3f(1.0f, 0.0f, 0.0f));
-            model = model.scale(0.05f, 0.05f, 0.05f);
-            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
-            dirtTexture.useTexture();
-            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
-            tooth30.renderModel();
-
-            /*
-            model = new Matrix4f();
-            model = model.translate(-5.0f, 2.0f, 5.0f);
-            //model = model.scale(0.006f, 0.006f, 0.006f);
-            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
-            dirtTexture.useTexture();
-            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
-            sphere.renderModel();
-             */
-
-            /*
-            model = new Matrix4f();
-            model = model.translate(-10.0f, 2.0f, 15.0f);
-            //model = model.scale(0.006f, 0.006f, 0.006f);
-            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
-            dirtTexture.useTexture();
-            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
-            eyeball.renderModel();
-             */
-
-            /*
-            model = new Matrix4f();
-            model = model.translate(10.0f, 2.0f, 20.0f);
-            model = model.rotate((float)Math.toRadians(-90.0f), new Vector3f(1.0f, 0.0f, 0.0f));
-            model = model.scale(0.01f, 0.01f, 0.01f);
-            glUniformMatrix4fv(uniformModel, false, model.get(modelArr));
-            dirtTexture.useTexture();
-            shinyMaterial.useMaterial(uniformSpecaularIntensity, uniformShininess);
-            airliner.renderModel();
-             */
+            RenderPass(projection, camera.calculateViewMatrix());
 
             glUseProgram(0);
 
