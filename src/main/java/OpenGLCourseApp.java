@@ -367,20 +367,21 @@ public class OpenGLCourseApp {
         shinyMaterial = new Material(4.0f, 256);
         dullMaterial = new Material(0.3f, 4);
 
+        String modelRoot = System.getProperty("user.dir") + "/target/classes/";
         /*
          */
         xwing = new Model();
-        xwing.loadModel("D:/gitrepos/OpenGLCourseApp/src/main/resources/Models/x-wing.obj");
+        xwing.loadModel(modelRoot + "Models/x-wing.obj");
 
         /*
          */
         blackhawk = new Model();
-        blackhawk.loadModel("D:/gitrepos/OpenGLCourseApp/src/main/resources/Models/uh60.obj");
+        blackhawk.loadModel(modelRoot + "Models/uh60.obj");
 
         /*
-         */
         tooth30 = new Model();
-        tooth30.loadModel("D:/gitrepos/OpenGLCourseApp/src/main/resources/Models/Lower_Right_First_Molar_30_Enamel.obj");
+        tooth30.loadModel(modelRoot + "Models/Lower_Right_First_Molar_30_Enamel.obj");
+         */
 
         /*
         sphere = new Model();
